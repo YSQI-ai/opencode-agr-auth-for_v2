@@ -2,9 +2,19 @@ import { appendFileSync, renameSync, statSync } from "node:fs"
 import { createServer } from "node:http"
 import { homedir } from "node:os"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import type { Server } from "node:http"
 
-let LOG = join(homedir(), ".config/opencode/plugins/antigravity/debug.log");
+/** Directory containing this plugin file, so the log always lands beside it. */
+const PLUGIN_DIR = (() => {
+  try {
+    return fileURLToPath(new URL(".", import.meta.url))
+  } catch {
+    return join(homedir(), ".config/opencode/plugins/antigravity")
+  }
+})()
+
+let LOG = join(PLUGIN_DIR, "debug.log");
 
 function dbg(msg: string) {
   try {
@@ -128,7 +138,6 @@ function adaptAuthorize(v1method: any) {
 export default {
   id: "antigravity-auth",
   async setup(ctx: any) {
-    LOG = join(ctx.location.directory, "debug.log");
     dbg(`setup start opencode=${ctx.app.version} dir=${ctx.location.directory}`)
     rotateLog()
 
