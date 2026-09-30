@@ -28,6 +28,7 @@ function rotateLog() {
 
 const V1_ENTRY = "./node_modules/opencode-antigravity-auth/dist/index.js"
 const V1_TOKEN_ENTRY = "./node_modules/opencode-antigravity-auth/dist/src/plugin/token.js"
+const V1_STORAGE_ENTRY = "./node_modules/opencode-antigravity-auth/dist/src/plugin/storage.js"
 const INTEGRATION_ID = "google"
 const OAUTH_METHOD_ID = "antigravity"
 const PROVIDER_ID = "google"
@@ -166,6 +167,7 @@ export default {
 
     const mod: any = await import(V1_ENTRY)
     const tokenMod: any = await import(V1_TOKEN_ENTRY).catch(() => ({}))
+    const storageMod: any = await import(V1_STORAGE_ENTRY).catch(() => ({}))
     const makeV1 = mod.AntigravityCLIOAuthPlugin
     if (typeof makeV1 !== "function") throw new Error("AntigravityCLIOAuthPlugin is not a function")
 
@@ -425,6 +427,23 @@ export default {
                   return credential
                 }
               },
+              disconnect: async () => {
+                dbg("disconnect (logout) triggered by V2");
+                try {
+                  await ctx.storage.delete("primary-auth");
+                  dbg("cleared primary-auth from storage");
+                } catch (e: any) {
+                  dbg(`failed to clear primary-auth: ${e?.message}`);
+                }
+                try {
+                  if (typeof storageMod.clearAccounts === "function") {
+                    await storageMod.clearAccounts();
+                    dbg("cleared V1 local account pool");
+                  }
+                } catch (e: any) {
+                  dbg(`failed to clear V1 accounts: ${e?.message}`);
+                }
+              },
             })
             dbg(`registered oauth method "${m.label}"`)
           } else if (m.type === "api") {
@@ -466,6 +485,12 @@ export default {
       void (async () => {
         try {
           for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+            // Provide a secondary failsafe for logout
+            if (event?.type === "credential.deleted" || event?.type === "credential.removed") {
+              dbg("credential.deleted event received, clearing V1 accounts");
+              try { await ctx.storage.delete("primary-auth"); } catch {}
+              try { if (typeof storageMod.clearAccounts === "function") await storageMod.clearAccounts(); } catch {}
+            }
             try {
               await v1.event({ event })
             } catch (e: any) {
