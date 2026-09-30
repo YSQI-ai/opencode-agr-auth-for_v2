@@ -4,12 +4,17 @@
   "description": "OpenCode V2 adapter for opencode-antigravity-auth",
   "main": "index.ts",
   "scripts": {
-    "postinstall": "sed -i 's/const CALLBACK_TIMEOUT_MS = 30000;/const CALLBACK_TIMEOUT_MS = Number(process.env.ANTIGRAVITY_OAUTH_TIMEOUT_MS) || 120000;/g' node_modules/opencode-antigravity-auth/dist/src/plugin.js"
+    "postinstall": "sed -i 's/const CALLBACK_TIMEOUT_MS = 30000;/const CALLBACK_TIMEOUT_MS = Number(process.env.ANTIGRAVITY_OAUTH_TIMEOUT_MS) || 120000;/g' node_modules/opencode-antigravity-auth/dist/src/plugin.js && sed -i 's/async function openBrowser(url) {/async function openBrowser(url) { return true;/g' node_modules/opencode-antigravity-auth/dist/src/plugin.js"
   },
   "dependencies": {
     "opencode-antigravity-auth": "^1.6.0"
   },
-  "keywords": ["opencode", "plugin", "antigravity", "gemini"],
+  "keywords": [
+    "opencode",
+    "plugin",
+    "antigravity",
+    "gemini"
+  ],
   "author": "",
   "license": "MIT"
 }
